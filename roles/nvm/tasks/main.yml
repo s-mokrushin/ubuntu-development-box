@@ -1,0 +1,109 @@
+- name: determine shell in which we are running
+  block:
+    - name: set default found path
+      set_fact:
+        found_path: ''
+
+    - name: test for shells
+      command: "which {{ item }}"
+      with_items:
+        - bash
+        - dash
+        - zsh
+        - csh
+        - tcsh
+      register: shell_path
+      when: item in nvm_profile
+
+    - name: set found path
+      set_fact:
+        found_path: "{{ shell_path.results | selectattr('stdout', 'defined') | map(attribute = 'stdout') | list | first }}"
+      when: shell_path.results | selectattr('stdout', 'defined') | map(attribute = 'stdout') | list | length > 0
+
+    - name: set bash command
+      set_fact:
+        user_shell: { 'command': '{{ found_path }} -ic', 'alias': 'bash' }
+      when: '"bash" in nvm_profile'
+
+    - name: set zsh command
+      set_fact:
+        user_shell: { 'command': '{{ found_path }} -ic', 'alias': 'zsh' }
+      when: '"zsh" in nvm_profile'
+
+    - name: set csh command
+      set_fact:
+        user_shell: { 'command': '{{ found_path }} -ic', 'alias': 'csh' }
+      when: "'csh' in nvm_profile and 'tcsh' not in nvm_profile"
+
+    - name: set tcsh command
+      set_fact:
+        user_shell: { 'command': '{{ found_path }} -ic', 'alias': 'tcsh' }
+      when: "'tcsh' in nvm_profile"
+
+    - name: "!WARNING! set unrecommended default for any other nvm_profile value !WARNING!"
+      set_fact:
+        user_shell: { 'command': '/etc/bash -ic', 'alias': 'bash' }
+      when: (shell_path is undefined) or (found_path | length == 0)
+
+    - name: does profile file exist
+      stat:
+        path: "{{ nvm_profile }}"
+      register: profile_file
+
+    - name: Create profile file if it does not exist
+      file:
+        mode: 0777
+        path: "{{ nvm_profile }}"
+        state: touch
+      when: not profile_file.stat.exists
+      become: true
+
+- name: Installing via curl or wget
+  block:
+    - name: Check if wget or curl is installed
+      command: "which {{ nvm_install }}"
+      register: cmd
+      changed_when: "cmd.rc != 0"
+
+    - name: Determine if install type wget
+      set_fact:
+        run_command: 'wget -qO-'
+      when: "'/wget' in cmd.stdout"
+
+    - name: Determine if install type curl
+      set_fact:
+        run_command: 'curl -o-'
+      when: "'/curl' in cmd.stdout"
+
+    - name: Create nvm_dir if it does not exist
+      file:
+        mode: 0775
+        path: "{{ nvm_dir }}"
+        state: directory
+      become: true
+      when: nvm_dir | length != 0
+
+    - name: Install NVM
+      shell: "{{ run_command }} https://raw.githubusercontent.com/creationix/nvm/v{{ nvm_version }}/install.sh | NVM_SOURCE={{ nvm_source }} NVM_DIR={{ nvm_dir }} PROFILE={{ nvm_profile }} {{ user_shell.alias }}"
+      args:
+        warn: false
+      register: nvm_result
+      changed_when: "'already installed' not in nvm_result.stdout"
+      failed_when:
+        - "'permission denied' in nvm_result.stderr"
+
+    - name: Update profile permissions to lock it down after writing
+      file:
+        mode: 0644
+        path: "{{ nvm_profile }}"
+      become: true
+      when: not profile_file.stat.exists
+
+    - name: Recursively change ownership of a directory
+      file:
+        path: "{{ nvm_dir }}"
+        recurse: yes
+        owner: vagrant
+        group: vagrant
+      become: true
+      when: nvm_dir | length != 0

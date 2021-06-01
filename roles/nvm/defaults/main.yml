@@ -1,0 +1,5 @@
+nvm_dir: "/home/vagrant/.nvm"
+nvm_install: "wget"
+nvm_profile: "/home/vagrant/.bashrc"
+nvm_source: ""
+nvm_version: "0.38.0"

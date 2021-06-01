@@ -1,0 +1,11 @@
+- name: Add PHP repository
+  apt_repository:
+    repo: ppa:ondrej/php
+    state: present
+  tags: php
+- name: Install PHP
+  apt:
+    name: "{{ php_packages }}"
+    state: latest
+  notify: "reload php fpm"
+  tags: php

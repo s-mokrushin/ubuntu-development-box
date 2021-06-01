@@ -1,0 +1,10 @@
+- name: Download dbeaver
+  get_url: url={{ dbeaver_url_deb }} dest={{ dbeaver_tmp_deb }}
+
+- name: Install dbeaver for Debian OS family
+  apt: deb={{ dbeaver_tmp_deb }}
+
+- name: Remove deb package file
+  file:
+    path={{ dbeaver_tmp_deb }}
+    state=absent

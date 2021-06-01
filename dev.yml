@@ -1,0 +1,40 @@
+- name: Setup for Developers
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Update apt cache.
+      apt:
+        update_cache: true
+        cache_valid_time: 600
+      tags: ["basics"]
+    - name: Install packages.
+      apt:
+        pkg: ['mc', 'docker.io', 'docker-compose']
+      tags: ["docker"]
+    - name: Let a user run docker without sudo.
+      become: yes
+      user:
+        name: vagrant
+        groups: docker
+        append: yes
+        state: present
+      tags: ["docker"]
+    - name: Copy ssh private key.
+      become: false
+      copy: src=/box/id_rsa dest=/home/vagrant/.ssh/id_rsa owner=vagrant group=vagrant mode=0600
+      tags: ["basics"]
+    - name: Ensure github is in the known_hosts file.
+      become: false
+      lineinfile:
+        dest: /home/vagrant/.ssh/known_hosts
+        create: yes
+        state: present
+        line: "{{ lookup('pipe', 'ssh-keyscan -t rsa -p 22 github.com') }}"
+        regexp: "^\\[github\\.com\\]"
+      tags: ["basics"]
+  roles:
+    - { role: phpstorm, tags: ["phpstorm"] }
+    - { role: visualcode, tags: ["visualcode"] }
+    - { role: nvm, tags: ["nvm"] }
+    - { role: dbeaver, tags: ["dbeaver"] }
+    - { role: php, tags: ["php"] }
