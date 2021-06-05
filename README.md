@@ -57,10 +57,10 @@ vagrant up
 
 Installation includes the following steps:
 
-Virtual machine image is downloaded with Vagrant.
-The new virtual machine is created and launched via VirtualBox.
-During the first launch Vagrant will install VirtualBox Additions which are necessary for changing the screen resolution and turning on the functionality of the clipboard.
-After restart all the needed components will be installed in the background process. This will take some time and you’ll be able to track the progress in the command line.
+* Virtual machine image is downloaded with Vagrant.
+* The new virtual machine is created and launched via VirtualBox.
+* During the first launch Vagrant will install VirtualBox Additions which are necessary for changing the screen resolution and turning on the functionality of the clipboard.
+* After restart all the needed components will be installed in the background process. This will take some time and you’ll be able to track the progress in the command line.
 
 ## Start
 
