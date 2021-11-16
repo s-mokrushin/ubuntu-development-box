@@ -9,3 +9,19 @@
     state: latest
   notify: "reload php fpm"
   tags: php
+- name: Install Composer
+  shell: curl -sS https://getcomposer.org/installer | php
+  args:
+    chdir: /usr/src/
+    creates: /usr/local/bin/composer
+    warn: false
+  become: yes
+- name: Add Composer to global path
+  copy:
+    dest: /usr/local/bin/composer
+    group: root
+    mode: '0755'
+    owner: root
+    src: /usr/src/composer.phar
+    remote_src: yes
+  become: yes
